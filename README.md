@@ -2,17 +2,6 @@
 
 Turn complete political question-answer exchanges into multilingual sub-questions, answer summaries, and response clarity predictions.
 
-## Roadmap
-
-- [x] Single-pair Python API and command-line input
-- [x] JSON batches with checkpoints and resume
-- [x] Three-stage decomposition, summarization, and classification
-- [x] Source-language summaries and fixed English taxonomy labels and definitions
-- [x] OpenAI, OpenRouter, Hugging Face Inference Providers, and compatible local endpoints
-- [x] Original-answer evidence with validated character offsets
-- [x] Label Studio task export and review template
-- [ ] Evaluation against manually reviewed multilingual samples
-- [ ] Direct local Transformers inference
 
 ## Install and run
 
