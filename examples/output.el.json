@@ -1,0 +1,64 @@
+{
+  "input_index": null,
+  "id": "hospital-el",
+  "question": "Πότε θα ανοίξει το νέο νοσοκομείο και πόσο θα κοστίσει;",
+  "answer": "Το νοσοκομείο θα ανοίξει τον Ιούνιο. Δεν γνωρίζω ακόμη το τελικό κόστος.",
+  "language": "el",
+  "metadata": {
+    "source": "Synthetic example",
+    "speaker": "Minister"
+  },
+  "question_summary": "Ζητούνται ο χρόνος έναρξης και το κόστος του νέου νοσοκομείου.",
+  "answer_summary": "Το νοσοκομείο θα ανοίξει τον Ιούνιο. Δεν γνωρίζω ακόμη το τελικό κόστος.",
+  "sub_questions": [
+    {
+      "id": 1,
+      "title": "Χρόνος έναρξης",
+      "question": "Πότε θα ανοίξει το νέο νοσοκομείο;",
+      "answer_summary": "Το νοσοκομείο θα ανοίξει τον Ιούνιο.",
+      "answer_evidence": [
+        {
+          "text": "Το νοσοκομείο θα ανοίξει τον Ιούνιο.",
+          "start": 0,
+          "end": 36
+        }
+      ],
+      "evasion_label": "Explicit",
+      "clarity_label": "Clear Reply",
+      "label_explanation": "The requested information is explicitly stated in the requested form.",
+      "clarity_explanation": "The response provides the requested information unambiguously."
+    },
+    {
+      "id": 2,
+      "title": "Τελικό κόστος",
+      "question": "Πόσο θα κοστίσει το νέο νοσοκομείο;",
+      "answer_summary": "Δεν γνωρίζω ακόμη το τελικό κόστος.",
+      "answer_evidence": [
+        {
+          "text": "Δεν γνωρίζω ακόμη το τελικό κόστος.",
+          "start": 37,
+          "end": 72
+        }
+      ],
+      "evasion_label": "Claims ignorance",
+      "clarity_label": "Clear Non-Reply",
+      "label_explanation": "The speaker states that they do not know the requested information.",
+      "clarity_explanation": "The speaker openly withholds an answer, claims ignorance, or seeks clarification."
+    }
+  ],
+  "provenance": {
+    "package_version": "0.1.0",
+    "prompt_version": "1.0",
+    "taxonomy_version": "qevasion-2024-nine-labels-v1",
+    "provider": "fixture",
+    "model": "deterministic-example",
+    "api": "fixture",
+    "output_modes": [
+      "fixture",
+      "fixture",
+      "fixture"
+    ],
+    "created_at": "2026-11-18T12:11:21.157987Z",
+    "review_status": "unreviewed"
+  }
+}

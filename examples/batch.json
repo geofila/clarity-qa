@@ -1,0 +1,32 @@
+[
+  {
+    "id": "hospital-en",
+    "language": "en",
+    "question": "When will the new hospital open, and what will it cost?",
+    "answer": "The hospital will open in June. I do not know the final cost yet."
+  },
+  {
+    "id": "hospital-el",
+    "language": "el",
+    "question": "Πότε θα ανοίξει το νέο νοσοκομείο και πόσο θα κοστίσει;",
+    "answer": "Το νοσοκομείο θα ανοίξει τον Ιούνιο. Δεν γνωρίζω ακόμη το τελικό κόστος."
+  },
+  {
+    "id": "hospital-es",
+    "language": "es",
+    "question": "¿Cuándo abrirá el nuevo hospital y cuánto costará?",
+    "answer": "El hospital abrirá en junio. Todavía no conozco el coste final."
+  },
+  {
+    "id": "hospital-da",
+    "language": "da",
+    "question": "Hvornår åbner det nye hospital, og hvad vil det koste?",
+    "answer": "Hospitalet åbner i juni. Jeg kender endnu ikke den endelige pris."
+  },
+  {
+    "id": "hospital-sv",
+    "language": "sv",
+    "question": "När öppnar det nya sjukhuset och vad kommer det att kosta?",
+    "answer": "Sjukhuset öppnar i juni. Jag känner ännu inte till den slutliga kostnaden."
+  }
+]

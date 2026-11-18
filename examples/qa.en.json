@@ -1,0 +1,7 @@
+{
+  "id": "hospital-en",
+  "language": "en",
+  "question": "When will the new hospital open, and what will it cost?",
+  "answer": "The hospital will open in June. I do not know the final cost yet.",
+  "metadata": {"source": "Synthetic example", "speaker": "Minister"}
+}

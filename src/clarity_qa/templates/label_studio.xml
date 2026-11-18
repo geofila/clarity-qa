@@ -1,0 +1,37 @@
+<View>
+  <Header value="Original question"/>
+  <Text name="original_question" value="$question"/>
+  <Header value="Original answer"/>
+  <Text name="original_answer" value="$answer"/>
+  <Header value="Question summary"/>
+  <Text name="question_summary" value="$question_summary"/>
+  <Header value="Answer summary"/>
+  <Text name="answer_summary" value="$answer_summary"/>
+  <Header value="Sub-question"/>
+  <Text name="sub_question" value="$sub_question"/>
+  <Header value="Sub-answer summary"/>
+  <Text name="sub_answer" value="$sub_answer"/>
+  <Header value="Supporting answer excerpts"/>
+  <Text name="evidence" value="$evidence"/>
+  <Header value="Label definitions"/>
+  <Text name="taxonomy_definitions" value="$taxonomy_definitions"/>
+  <Header value="Response type"/>
+  <Choices name="evasion" toName="sub_question" choice="single" required="true">
+    <Choice value="Explicit"/>
+    <Choice value="Implicit"/>
+    <Choice value="Dodging"/>
+    <Choice value="Deflection"/>
+    <Choice value="Partial/half-answer"/>
+    <Choice value="General"/>
+    <Choice value="Declining to answer"/>
+    <Choice value="Claims ignorance"/>
+    <Choice value="Clarification"/>
+  </Choices>
+  <Header value="Decomposition check"/>
+  <Choices name="decomposition_check" toName="sub_question" choice="single">
+    <Choice value="Question is supported by the original text"/>
+    <Choice value="Question does not exist in the original text"/>
+  </Choices>
+  <Header value="Additional missed questions or corrections"/>
+  <TextArea name="corrections" toName="sub_question" rows="3"/>
+</View>

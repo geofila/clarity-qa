@@ -1,0 +1,7 @@
+{
+  "id": "hospital-el",
+  "language": "el",
+  "question": "Πότε θα ανοίξει το νέο νοσοκομείο και πόσο θα κοστίσει;",
+  "answer": "Το νοσοκομείο θα ανοίξει τον Ιούνιο. Δεν γνωρίζω ακόμη το τελικό κόστος.",
+  "metadata": {"source": "Synthetic example", "speaker": "Minister"}
+}
