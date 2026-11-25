@@ -181,6 +181,8 @@ Agreement uses only complete ordinary shared items, before adjudication. Control
 
 See the [annotation-study guide](docs/annotation-studies.md) for configuration, review, import, evaluation, denominator definitions and the paper alignment.
 
+For annotators, share the [CLARITY Annotator Guide (PDF)](docs/CLARITY-Annotator-Guide.pdf). It covers the labeling workflow, the nine response types, examples adapted from Table 4 of the paper, and a submission checklist.
+
 ## Label Studio prediction review
 
 ```bash
