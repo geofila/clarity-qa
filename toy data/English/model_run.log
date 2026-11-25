@@ -1,0 +1,13 @@
+
+Run started: 2026-11-25T15:21:34.479289+00:00
+COMMAND: ["/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/work/clarity-qa-release-check/bin/python", "-m", "clarity_qa", "analyze", "--provider", "openai", "--model", "gpt-6.1-sol", "--language", "en", "--input", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/input.json", "--output", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/analysis.output.json", "--resume"]
+Completed 1/3
+Completed 2/3
+Completed 3/3
+Saved 3 exchange(s) to /Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/analysis.output.json
+COMMAND: ["/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/work/clarity-qa-release-check/bin/python", "-m", "clarity_qa", "prepare-study", "--input", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/analysis.output.json", "--config", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/study.config.json", "--output", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/study", "--resume"]
+Prepared 3 source exchange(s), 0 shared, for 1 annotator(s).
+Review 0 control candidate(s) in /Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/study/private/counterfactuals.json, then run export-study.
+COMMAND: ["/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/work/clarity-qa-release-check/bin/python", "-m", "clarity_qa", "export-study", "--study", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/study", "--output", "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/label-studio"]
+Exported distribution b8411abfc59fb1586da711c9 to /Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/label-studio.
+annotator_01: 9 task(s)

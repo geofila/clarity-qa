@@ -1,44 +1,66 @@
-<View>
-  <Header value="Read the original exchange. Supporting summaries may contain errors. Label the original response."/>
-  <Header value="Original question"/>
-  <Text name="original_question" value="$question"/>
-  <Header value="Original answer"/>
-  <Text name="original_answer" value="$answer"/>
-  <Header value="Sub-question"/>
-  <Text name="sub_question" value="$sub_question"/>
-  <Header value="Supporting answer summary"/>
-  <Text name="sub_answer" value="$sub_answer"/>
-  <Header value="Does this sub-question occur in the original question?"/>
-  <Choices name="question_validity" toName="sub_question" choice="single" required="true">
-    <Choice value="Supported"/>
-    <Choice value="Unsupported"/>
-  </Choices>
-  <View visibleWhen="choice-selected" whenTagName="question_validity" whenChoiceValue="Supported">
-    <Header value="Does the supporting summary faithfully represent the original answer?"/>
-    <Choices name="summary_faithfulness" toName="sub_answer" choice="single" required="true">
-      <Choice value="Supported"/>
-      <Choice value="Unsupported"/>
-      <Choice value="Uncertain"/>
-    </Choices>
-    <View visibleWhen="choice-selected" whenTagName="summary_faithfulness" whenChoiceValue="Unsupported">
-      <Header value="Correct the supporting summary using the original answer"/>
-      <TextArea name="corrected_summary" toName="sub_answer" rows="3" editable="true" maxSubmissions="1" required="true"/>
+<View className="clarity-exchange">
+  <Style>
+    .clarity-exchange { max-width: 1360px; margin: 0 auto; padding: 8px 12px 32px; font-family: Arial, sans-serif; color: #20343b; }
+    .clarity-exchange .htx-text { white-space: pre-wrap; line-height: 1.75; }
+    .clarity-exchange .source-columns { display: flex; gap: 22px; align-items: flex-start; }
+    .clarity-exchange .source-question { flex: 1; min-width: 0; }
+    .clarity-exchange .source-answer { flex: 1.6; min-width: 0; }
+    .clarity-exchange .source-card { border: 1px solid #dbe3e7; border-radius: 12px; padding: 18px 22px; background: #fff; }
+    .clarity-exchange .section { margin-top: 24px; padding-top: 16px; border-top: 1px solid #d8e1e4; }
+    .clarity-exchange .summary-panel { margin-top: 20px; padding: 20px 24px; border: 1px solid #d7e2e7; border-radius: 12px; }
+    .clarity-exchange .summary-questions { background: #f5f7fa; border-left: 5px solid #8999ad; }
+    .clarity-exchange .summary-answers { background: #f0f7f8; border-left: 5px solid #347487; }
+    .clarity-exchange .summary-panel .htx-text { font-size: 16px; line-height: 1.9; }
+    @media (max-width: 900px) { .clarity-exchange .source-columns { flex-direction: column; } }
+  </Style>
+
+  <Header value="CLARITY - Political Response Annotation"/>
+
+  <View className="source-columns">
+    <View className="source-question source-card">
+      <Header value="Original question"/>
+      <Text name="original_question" value="$question" selectionEnabled="false"/>
     </View>
-    <Header value="Response type, based on the original exchange"/>
-    <Choices name="evasion" toName="sub_question" choice="single" required="true">
-      <Choice value="Explicit"/>
-      <Choice value="Implicit"/>
-      <Choice value="Dodging"/>
-      <Choice value="Deflection"/>
-      <Choice value="Partial/half-answer"/>
-      <Choice value="General"/>
-      <Choice value="Declining to answer"/>
-      <Choice value="Claims ignorance"/>
-      <Choice value="Clarification"/>
-    </Choices>
+    <View className="source-answer source-card">
+      <Header value="Original answer"/>
+      <Text name="original_answer" value="$answer" selectionEnabled="false"/>
+    </View>
   </View>
-  <Header value="Missing questions or other corrections"/>
-  <TextArea name="corrections" toName="sub_question" rows="3"/>
-  <Header value="Label definitions"/>
-  <Text name="taxonomy_definitions" value="$taxonomy_definitions"/>
+
+  <View className="section">
+    <Header value="Response labels"/>
+    <Labels name="evasion" toName="sub_answers" choice="single" showInline="true">
+      <Label value="Explicit" background="#b8dfbd" hotkey="1"/>
+      <Label value="Implicit" background="#d6e5d0" hotkey="2"/>
+      <Label value="Dodging" background="#fff0a6" hotkey="3"/>
+      <Label value="Deflection" background="#f4d5a3" hotkey="4"/>
+      <Label value="Partial/half-answer" background="#bde1ef" hotkey="5"/>
+      <Label value="General" background="#ced4f0" hotkey="6"/>
+      <Label value="Declining to answer" background="#ddc5ec" hotkey="7"/>
+      <Label value="Claims ignorance" background="#f2cbd8" hotkey="8"/>
+      <Label value="Clarification" background="#f8d7c5" hotkey="9"/>
+      <Label value="Error: Question does not exist in the original text" background="#f5aaa5" hotkey="0"/>
+    </Labels>
+  </View>
+
+  <View className="summary-panel summary-questions">
+    <Header value="Question breakdown"/>
+    <Text name="sub_questions" value="$sub_questions" selectionEnabled="false"/>
+  </View>
+
+  <View className="summary-panel summary-answers">
+    <Header value="Answer summaries"/>
+    <Text name="sub_answers" value="$sub_answers" granularity="paragraph" showLabels="true"/>
+  </View>
+
+  <View className="section">
+    <Header value="Any additional missed questions or corrections?"/>
+    <Header size="5" value="Add each missing question on a separate line using: [Question]: [Label]. Example: When will the hospital open?: Dodging. You can also report inaccurate summaries here."/>
+    <TextArea name="corrections" toName="sub_answers" rows="4" editable="true"/>
+  </View>
+
+  <View className="section">
+    <Header value="Label definitions"/>
+    <Text name="taxonomy_definitions" value="$taxonomy_definitions" selectionEnabled="false"/>
+  </View>
 </View>

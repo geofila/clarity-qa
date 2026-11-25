@@ -4,11 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "clarity-qa"
-version = "0.2.0"
+version = "0.3.0"
 description = "Multilingual question decomposition and response clarity pre-annotation."
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = ["openai>=2.0,<3", "pydantic>=2.7,<3", "filelock>=3.13,<4"]
+
+[project.optional-dependencies]
+docs = ["reportlab>=4,<5"]
 
 [project.scripts]
 clarity-qa = "clarity_qa.cli:main"
@@ -17,4 +20,4 @@ clarity-qa = "clarity_qa.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-clarity_qa = ["templates/*.xml"]
+clarity_qa = ["templates/*.xml", "templates/*.html", "resources/*.pdf"]

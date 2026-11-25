@@ -58,8 +58,11 @@ class CommandLineTests(unittest.TestCase):
             config = root / "config.xml"
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["export-label-studio", "--input", str(output), "--output", str(tasks), "--config", str(config)]), 0)
-            self.assertEqual(len(json.loads(tasks.read_text())), 2)
-            self.assertIn("Additional missed questions", config.read_text())
+            exported = json.loads(tasks.read_text())
+            self.assertEqual(len(exported), 1)
+            self.assertEqual(len(exported[0]["data"]["sub_answers"].split("\n\n")), 2)
+            self.assertNotIn("predictions", exported[0])
+            self.assertIn("additional missed questions", config.read_text())
             with contextlib.redirect_stderr(io.StringIO()):
                 self.assertEqual(main(args), 2)
 

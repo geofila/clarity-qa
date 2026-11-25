@@ -17,6 +17,7 @@ from pydantic import ValidationError
 from clarity_qa import QAPipeline
 from clarity_qa.cli import main
 from clarity_qa.io import atomic_json, fingerprint
+from clarity_qa.label_studio import ERROR_LABEL
 from clarity_qa.providers import GenerationError, ProviderError
 from clarity_qa.study import export_study, make_plan, prepare_study, read_json
 from clarity_qa.study_evaluation import evaluate_study, fleiss_kappa
@@ -71,7 +72,18 @@ def approve(directory):
     atomic_json(path, rows)
 
 
-def annotation(label="Explicit", summary="Supported", validity="Supported", user=1):
+def annotation(label="Explicit", summary="Supported", validity="Supported", user=1, data=None):
+    if data is not None:
+        values, offset = [], 0
+        for i, paragraph in enumerate(data["sub_answers"].split("\n\n")):
+            end = offset + len(paragraph.encode("utf-16-le")) // 2
+            values.append({
+                "id": "part-{}".format(i + 1), "from_name": "evasion", "to_name": "sub_answers", "type": "labels",
+                "value": {"start": offset, "end": end, "text": paragraph,
+                          "labels": [ERROR_LABEL if validity == "Unsupported" and i == 0 else label]},
+            })
+            offset = end + 2
+        return {"completed_by": user, "was_cancelled": False, "result": values}
     def choice(name, target, value):
         return {"from_name": name, "to_name": target, "type": "choices", "value": {"choices": [value]}}
     values = [choice("question_validity", "sub_question", validity)]
@@ -90,7 +102,7 @@ def write_exports(pack, target, manifest, customize=None):
         tasks = read_json(Path(pack) / (name + ".json"))
         for task in tasks:
             key = task["data"]["task_key"]
-            task["annotations"] = [annotation(user=index + 1)]
+            task["annotations"] = [annotation(user=index + 1, data=task["data"])]
             if customize:
                 customize(task, name, key)
         atomic_json(target / (name + ".json"), tasks)
@@ -209,20 +221,20 @@ class StudyWorkflowTests(StudyFixture, unittest.TestCase):
         manifest = export_study(self.study, self.pack)
         self.assertEqual(len(manifest["controls"]), 6)
         self.assertEqual(set(path.name for path in self.pack.iterdir()),
-                         {"annotator_01.json", "annotator_02.json", "annotator_03.json", "IMPORT.md", "labeling_config.xml"})
+                         {"annotator_01.json", "annotator_02.json", "annotator_03.json", "IMPORT.md", "labeling_config.xml", "annotation_instructions.html", "CLARITY-Annotator-Guide.pdf"})
         shared = {}
         for name in manifest["annotators"]:
             tasks = read_json(self.pack / (name + ".json"))
             for task in tasks:
                 self.assertEqual(set(task), {"data"})
-                self.assertEqual(set(task["data"]), {"task_key", "language", "question", "answer", "sub_question", "sub_answer", "taxonomy_definitions"})
+                self.assertEqual(set(task["data"]), {"task_key", "language", "question", "answer", "sub_questions", "sub_answers", "taxonomy_definitions"})
                 self.assertNotIn("private-secret", json.dumps(task))
                 self.assertRegex(task["data"]["task_key"], r"^[0-9a-f]{32}$")
                 key = task["data"]["task_key"]
                 info = manifest["tasks"][key]
                 if info["source_key"] in plan["shared_source_keys"]:
                     self.assertEqual(task["data"], shared.setdefault(key, task["data"]))
-        self.assertEqual(len(shared), 8)
+        self.assertEqual(len(shared), 4)
 
     def test_greek_source_and_generated_text_survive_export(self):
         _, _, backend = self.prepare(language="el")
@@ -233,7 +245,7 @@ class StudyWorkflowTests(StudyFixture, unittest.TestCase):
         for row in rows:
             self.assertIn("νοσοκομείο", row["data"]["question"])
             if row["data"]["task_key"] in manifest["controls"]:
-                self.assertIn("κατασκευή", row["data"]["sub_answer"])
+                self.assertIn("κατασκευή", row["data"]["sub_answers"])
 
     def test_resume_preserves_reviews_and_never_repeats_completed_calls(self):
         source, plan, backend = self.prepare()
@@ -344,9 +356,9 @@ class StudyEvaluationTests(StudyFixture, unittest.TestCase):
         def customize(task, name, key):
             user = manifest["annotators"].index(name) + 1
             if key in shared:
-                task["annotations"] = [annotation(pattern[shared.index(key) % 4][manifest["annotators"].index(name)], user=user)]
+                task["annotations"] = [annotation(pattern[shared.index(key) % 4][manifest["annotators"].index(name)], user=user, data=task["data"])]
             elif key in manifest["controls"]:
-                task["annotations"] = [annotation(manifest["controls"][key]["counter_label"], summary="Unsupported", user=user)]
+                task["annotations"] = [annotation(manifest["controls"][key]["counter_label"], user=user, data=task["data"])]
         exports = self.root / "exports"
         write_exports(self.pack, exports, manifest, customize)
         report = evaluate_study(self.study, exports)
@@ -356,7 +368,8 @@ class StudyEvaluationTests(StudyFixture, unittest.TestCase):
         self.assertEqual(report["agreement"]["evasion"]["items"], 8)
         for scores in report["counterfactuals"].values():
             self.assertEqual(scores["counterlabel_uptake_rate"], 1)
-            self.assertEqual(scores["summary_error_detection_rate"], 1)
+            self.assertIsNone(scores["summary_error_detection_rate"])
+            self.assertEqual(scores["summary_checks"], 0)
             self.assertEqual(scores["reviewed_source_label_accuracy"], 0)
 
     def test_missing_cancelled_and_unsupported_shared_items_are_reported(self):
@@ -366,13 +379,13 @@ class StudyEvaluationTests(StudyFixture, unittest.TestCase):
             if name == "annotator_01" and key == shared[0]:
                 task["annotations"][0]["was_cancelled"] = True
             if name == "annotator_01" and key == shared[1]:
-                task["annotations"] = [annotation(validity="Unsupported")]
+                task["annotations"] = [annotation(validity="Unsupported", data=task["data"])]
         exports = self.root / "exports"
         write_exports(self.pack, exports, manifest, customize)
         report = evaluate_study(self.study, exports)
-        self.assertEqual(report["agreement"]["excluded_incomplete"], 1)
+        self.assertEqual(report["agreement"]["excluded_incomplete"], 2)
         self.assertEqual(report["agreement"]["excluded_invalid_subquestions"], 1)
-        self.assertEqual(report["agreement"]["evasion"]["items"], 6)
+        self.assertEqual(report["agreement"]["evasion"]["items"], 5)
 
     def test_unreviewed_controls_are_not_scored_against_model_gold(self):
         manifest = self.distribution(reviewed=False)
@@ -460,7 +473,7 @@ class StudyCLITests(unittest.TestCase):
             self.assertEqual(len(read_json(root / "report.json")["normal_annotations"]), 20)
             xml = ET.parse(root / "pack/labeling_config.xml").getroot()
             names = {element.attrib["name"] for element in xml.iter() if "name" in element.attrib}
-            self.assertTrue({"summary_faithfulness", "corrected_summary", "evasion"}.issubset(names))
+            self.assertTrue({"sub_answers", "sub_questions", "evasion", "corrections"}.issubset(names))
 
 
 if __name__ == "__main__":

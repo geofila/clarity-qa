@@ -1,40 +1,32 @@
 # Validation
 
-Version 0.2.0, checked on 25 November 2026.
+Version 0.3.0, checked on 25 November 2026.
 
-## Automated suite
+## Automated suite and installation
 
-All 52 tests passed in each of these environments:
+All **61 tests passed** on Python 3.9.6 and Python 3.12.16. A built 0.3.0 wheel was installed with its declared dependencies into a new Python 3.12 environment. All 61 tests also passed against that installed package from outside the source checkout. `pip check` reported no broken requirements. Both XML templates, the HTML instruction template and the PDF manual are present in the installed package.
 
-| Environment | Python | OpenAI SDK | Pydantic | Filelock |
-| --- | --- | --- | --- | --- |
-| Local compatibility check | 3.9.6 | 2.30.0 | 2.12.5 | 3.19.1 |
-| Isolated package check | 3.12.16 | 2.54.0 | 2.14.3 | 3.32.7 |
+The suite covers model/provider handling, multilingual text and evidence preservation, grouped source overlap, blinded exports, reviewed unseen-source controls, checkpoint resume, full JSON export parsing, variable part counts and explicit prediction opt-in. Highlight regressions cover UTF-16 offsets including emoji, missing/duplicate/partial/cross-answer spans, invalid labels and offsets, per-part Error decisions, exchange-level corrections, legacy choice distributions and hand-calculated Fleiss' kappa.
 
-The suite covers the existing analysis and provider behavior, multilingual text preservation, fixed taxonomy definitions, source evidence, checkpoint resume and repair. Study tests cover whole-exchange overlap, the 3,000-unit workload example, unseen-source controls, duplicate and language checks, blinded imports, review requirements, reviewed reference corrections, incomplete/canceled annotations, and separate agreement and control metrics. Hand-calculated cases verify Fleiss' kappa and its undefined one-category case.
+## Real Label Studio application integration
 
-The end-to-end CLI test runs raw QA input through the real OpenAI SDK with a controlled HTTP transport, reviews generated control fixtures, exports individual Label Studio packs, and evaluates full annotation-export fixtures. Model responses are fixtures, not live inference results.
-
-## Label Studio integration
-
-The optional integration script uses the installed Label Studio 1.23.2 application, Django API views and a temporary SQLite database. It creates actual projects, imports files through the multipart import endpoint, submits synthetic annotations through the annotation endpoint, exports full JSON through the export endpoint, and evaluates those exports using this package.
-
-The checked run produced:
+`tests/integration_label_studio.py` uses Label Studio 1.23.2, real Django project/import/annotation/export API views and temporary SQLite. Test annotations and model control responses are synthetic fixtures.
 
 | Check | Result |
 | --- | --- |
-| Projects created with the study XML | 3 |
-| Tasks imported | 62 |
-| Synthetic human-format annotations submitted | 62 |
-| Canonical normal sub-question units recovered | 40 |
-| Common sub-question units used for agreement | 8 |
-| Additional control exposures | 6 |
+| Projects | 3 |
+| Complete-exchange tasks imported and annotated | 34 |
+| Highlight regions recovered | 68 |
+| Ordinary sub-question units recovered | 40 |
+| Common ordinary units used for agreement | 8 |
+| Control exchange exposures | 6 |
 | Evasion / clarity kappa for the unanimous fixture | 1.0 / 1.0 |
-| Summary-error detection / reviewed-reference accuracy | 1.0 / 1.0 |
+| Reviewed source-label accuracy on manipulated control parts | 1.0 |
+| HTML instruction CSS retained after saving | Yes |
 
-The fixture checks data flow and calculations, not annotation difficulty or model quality. The test does not use a browser, test frontend interactions, contact an existing deployment, or establish access isolation in Community Edition.
+All parts of each exchange remain together. Each control changes exactly one summary. Controls and their unchanged companion parts are excluded from ordinary annotations and agreement. The highlight-only UI has no separate summary-faithfulness choice: automatic summary-error detection is `null`. Free-text error reports require coordinator review.
 
-To reproduce the optional application integration, install Label Studio in a separate test environment. It is not a runtime dependency of this package. Using a separate environment also avoids coupling this package's OpenAI SDK requirement to Label Studio's own dependencies.
+Reproduce the optional integration in an isolated environment; Label Studio is not a package runtime dependency:
 
 ```bash
 python3.12 -m venv /tmp/clarity-label-studio-test
@@ -42,12 +34,25 @@ python3.12 -m venv /tmp/clarity-label-studio-test
 PYTHONPATH=src:tests /tmp/clarity-label-studio-test/bin/python tests/integration_label_studio.py
 ```
 
-The script disables analytics, Sentry and update checks for its temporary local application.
+## Saved live English model run and final export
 
-## Installation check
+The [English toy inputs](../toy%20data/English/input.json) were processed with the OpenAI Responses API using `gpt-6.1-sol`. The original 0.2.0 model output and original run receipt are preserved. Model labels remain unreviewed. The saved output was re-exported using the standard 0.3.0 `prepare-study` and `export-study` commands without further model calls, producing **three complete-exchange tasks with nine numbered summaries**. It does not rely on a demo-only adapter.
 
-A built 0.2.0 wheel was installed with its declared dependencies in a clean Python 3.12 environment. The installed CLI exposes the study commands, and the study XML is included as package data. `pip check` reports no broken requirements. The automated tests also run against the installed package from outside the source checkout.
+The final JSON and XML were imported into a local Label Studio project and roundtripped with no annotations or predictions. Browser interaction then created three labels and an exchange-level note on one task, submitted them through the UI, and the standard evaluator recovered the three individual judgments from the actual browser-generated offsets. The [browser screenshot](images/label-studio-highlight-demo.jpg) shows the test fixture. These are software checks, not research annotations; the committed import is unannotated.
+
+The instruction popup was also visually checked in the local application. The demo URL returned HTTP 200 at its Label Studio login page. This check did not alter the remote deployment or import files there.
+
+## Annotator manual
+
+The five-page PDF was updated for complete-exchange highlight annotation. Label examples still come from Table 4 of the original paper, with simplified or abridged wording. Updated workflow/checklist pages were rendered and visually inspected. The repository and packaged copies of the PDF are identical. Participant materials do not describe private control-generation details.
+
+To rebuild the guide on macOS with Arial, or Linux with DejaVu Sans installed:
+
+```bash
+python -m pip install ".[docs]"
+python scripts/build_annotator_guide.py
+```
 
 ## Limits
 
-No model-provider credential was configured, so live model generation was not checked. These tests do not establish that generated sub-questions, labels or counterfactual summaries are semantically correct in any language. The default control-review step requires a coordinator to verify the source label, misleading interpretation, language and suitability before distribution. A language-specific pilot is still needed to assess workload and annotation quality.
+Tests establish data flow, schema validation and agreement calculations. They do not establish that generated sub-questions, labels or counterfactual summaries are semantically correct in a new language. Counterfactual review requires a coordinator to verify each source label, misleading interpretation, language and suitability. Suggested new questions and free-text corrections require manual review and alignment. A language-specific pilot is needed to assess annotation quality and workload. Community Edition filenames and projects do not enforce per-user access isolation.

@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from clarity_qa import QAPipeline
 from clarity_qa.io import load_pairs, run_batch
-from clarity_qa.label_studio import export_tasks, labeling_config
+from clarity_qa.label_studio import ERROR_LABEL, export_tasks, labeling_config, utf16_slice
 from clarity_qa.models import Analysis, BatchResult, QAPair
 from clarity_qa.providers import GenerationError, ProviderError
 from clarity_qa.taxonomy import CLARITY_EXPLANATIONS, TAXONOMY, ClarityLabel, EvasionLabel
@@ -222,13 +222,17 @@ class PipelineTests(unittest.TestCase):
         result = QAPipeline(backend=FixtureBackend(responses("el"))).analyze(GREEK)
         tasks = export_tasks([result])
         root = ET.fromstring(labeling_config())
-        choices = {choice.attrib["value"] for choice in root.findall("./Choices[@name='evasion']/Choice")}
-        self.assertEqual(choices, {label.value for label in TAXONOMY})
-        self.assertEqual(len(tasks), 2)
-        self.assertEqual(tasks[1]["data"]["answer"], GREEK["answer"])
-        prediction = tasks[1]["predictions"][0]["result"][0]
-        self.assertEqual(prediction["value"]["choices"], ["Claims ignorance"])
-        self.assertEqual(prediction["to_name"], "sub_question")
+        choices = {choice.attrib["value"] for choice in root.findall(".//Labels[@name='evasion']/Label")}
+        self.assertEqual(choices, {label.value for label in TAXONOMY} | {ERROR_LABEL})
+        self.assertEqual(len(tasks), 1)
+        self.assertEqual(tasks[0]["data"]["answer"], GREEK["answer"])
+        self.assertNotIn("predictions", tasks[0])
+        predicted = export_tasks([result], show_model_labels=True)
+        prediction = predicted[0]["predictions"][0]["result"][1]
+        self.assertEqual(prediction["value"]["labels"], ["Claims ignorance"])
+        self.assertEqual(prediction["to_name"], "sub_answers")
+        span = prediction["value"]
+        self.assertEqual(utf16_slice(predicted[0]["data"]["sub_answers"], span["start"], span["end"]), span["text"])
 
     def test_all_nine_labels_have_one_deterministic_clarity_mapping(self):
         self.assertEqual(len(TAXONOMY), 9)

@@ -1,0 +1,56 @@
+<style>
+  .clarity-guide { color: #243640; font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; }
+  .clarity-guide .cg-intro { margin: 0 0 8px; padding: 14px 16px; background: #eff6f7; border: 1px solid #dce9ed; border-radius: 10px; }
+  .clarity-guide .cg-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 14px 0; border-bottom: 1px solid #e5ebee; }
+  .clarity-guide .cg-number { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #eaf2f5; color: #2c6477; font-size: 12px; font-weight: 700; }
+  .clarity-guide .cg-title { margin: 0 0 3px; font-size: 14px; font-weight: 700; color: #203c49; }
+  .clarity-guide .cg-body { margin: 0; font-size: 14px; line-height: 1.6; }
+  .clarity-guide .cg-error { color: #973c37; font-weight: 600; }
+  .clarity-guide .cg-footer { margin: 14px 0 0; font-size: 12px; color: #60747e; }
+</style>
+
+<div class="clarity-guide">
+  <p class="cg-intro">Each task contains <strong>one complete question-answer exchange</strong>. Base your labels on the original exchange.</p>
+
+  <div class="cg-step">
+    <span class="cg-number">1</span>
+    <div>
+      <p class="cg-title">Read the original exchange</p>
+      <p class="cg-body">Read the full question and answer before using the summaries.</p>
+    </div>
+  </div>
+
+  <div class="cg-step">
+    <span class="cg-number">2</span>
+    <div>
+      <p class="cg-title">Match the numbered parts</p>
+      <p class="cg-body">Question 1 matches answer summary 1, question 2 matches summary 2, and so on.</p>
+    </div>
+  </div>
+
+  <div class="cg-step">
+    <span class="cg-number">3</span>
+    <div>
+      <p class="cg-title">Highlight and label</p>
+      <p class="cg-body">Select a response label, then highlight the <strong>entire numbered answer summary</strong>. Assign one label to every summary.</p>
+    </div>
+  </div>
+
+  <div class="cg-step">
+    <span class="cg-number">4</span>
+    <div>
+      <p class="cg-title">Flag an absent question</p>
+      <p class="cg-body">If a sub-question is absent from the original question, mark its summary with <span class="cg-error">Error: Question does not exist in the original text</span>.</p>
+    </div>
+  </div>
+
+  <div class="cg-step">
+    <span class="cg-number">5</span>
+    <div>
+      <p class="cg-title">Add corrections</p>
+      <p class="cg-body">Report inaccurate summaries in the corrections field. For a missing question, add one line as <strong>Question: Label</strong>, using the fixed English label names.</p>
+    </div>
+  </div>
+
+  <p class="cg-footer">Before submitting, check that every numbered answer has one label.</p>
+</div>

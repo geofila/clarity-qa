@@ -14,6 +14,7 @@ from . import __version__
 from .counterfactuals import COUNTERFACTUAL_PROMPT_VERSION, generate_counterfactual, validate_summary
 from .io import atomic_json, fingerprint, load_pairs, run_batch
 from .models import Analysis, BatchResult
+from .label_studio import ANNOTATION_FORMAT, annotation_instructions, exchange_data, labeling_config
 from .study_models import CounterfactualCandidate, StudyConfig
 from .taxonomy import TAXONOMY, EvasionLabel
 
@@ -310,31 +311,34 @@ def export_study(directory, output):
         public = {name: [] for name in config.annotator_ids()}
         manifest = {
             "schema_version": STUDY_SCHEMA, "study_id": plan["study_id"],
+            "annotation_format": ANNOTATION_FORMAT,
             "plan_sha256": fingerprint(plan), "annotators": config.annotator_ids(),
             "tasks": {}, "assignments": {}, "controls": {},
             "shared_source_keys": plan["shared_source_keys"],
         }
         for name, source_keys in plan["assignments"].items():
             for source_key in source_keys:
-                for part in plan["sources"][source_key]["sub_questions"]:
-                    data = normal_data(plan, source_key, part["id"])
-                    key = data["task_key"]
-                    public[name].append({"data": data})
-                    manifest["tasks"][key] = {
-                        "kind": "normal", "source_key": source_key, "part_id": part["id"],
-                        "data_sha256": fingerprint(data),
-                    }
+                analysis = Analysis.model_validate(plan["sources"][source_key])
+                key = task_key(plan["study_id"], source_key, None)
+                data, parts = exchange_data(analysis, key)
+                public[name].append({"data": data})
+                manifest["tasks"][key] = {
+                    "kind": "normal", "source_key": source_key, "parts": parts,
+                    "data_sha256": fingerprint(data),
+                }
         for candidate in candidates.values():
-            data = normal_data(plan, candidate.source_key, candidate.part_id)
-            key = task_key(plan["study_id"], candidate.source_key, candidate.part_id,
+            analysis = Analysis.model_validate(plan["sources"][candidate.source_key])
+            key = task_key(plan["study_id"], candidate.source_key, None,
                            [candidate.candidate_id, candidate.misleading_summary])
-            data.update(task_key=key, sub_answer=candidate.misleading_summary)
+            data, parts = exchange_data(analysis, key, {candidate.part_id: candidate.misleading_summary})
             public[candidate.assigned_annotator].append({"data": data})
             manifest["tasks"][key] = {
                 "kind": "counterfactual", "source_key": candidate.source_key, "part_id": candidate.part_id,
+                "parts": parts,
                 "candidate_id": candidate.candidate_id, "data_sha256": fingerprint(data),
             }
             manifest["controls"][key] = {
+                "part_id": candidate.part_id,
                 "counter_label": candidate.counter_label.value, "review_status": candidate.review.status,
                 "reference_label": candidate.review.reference_label.value if candidate.review.status == "approved" else None,
                 "reviewer": candidate.review.reviewer if candidate.review.status == "approved" else None,
@@ -348,8 +352,10 @@ def export_study(directory, output):
         try:
             for name, tasks in public.items():
                 atomic_json(staging / (name + ".json"), tasks)
-            xml = files("clarity_qa").joinpath("templates/study_label_studio.xml").read_text(encoding="utf-8")
-            (staging / "labeling_config.xml").write_text(xml, encoding="utf-8")
+            (staging / "labeling_config.xml").write_text(labeling_config(), encoding="utf-8")
+            (staging / "annotation_instructions.html").write_text(annotation_instructions(), encoding="utf-8")
+            manual = files("clarity_qa").joinpath("resources/CLARITY-Annotator-Guide.pdf").read_bytes()
+            (staging / "CLARITY-Annotator-Guide.pdf").write_bytes(manual)
             guide = (
                 "# Label Studio import\n\nDistribution: " + export_id + "\n\n"
                 "Create one project per annotator. Paste labeling_config.xml into Labeling Setup, "
@@ -358,9 +364,12 @@ def export_study(directory, output):
                 "Community Edition users can see all projects; use separate instances or Enterprise "
                 "permissions if access must be isolated. Annotators should work independently and "
                 "must not inspect each other's projects or annotations.\n\n"
-                "Ask annotators to read the full original exchange, check the sub-question and supporting "
-                "summary, correct unsupported summaries, and label the ORIGINAL response. "
-                "Use the fixed English response labels. Summaries and corrections stay in the source language.\n\n"
+                "Paste annotation_instructions.html into the project's Instructions field. "
+                "Each task contains one complete exchange, all numbered sub-questions and their answer summaries. "
+                "Annotators highlight each entire numbered answer summary and assign one response label, "
+                "based on the ORIGINAL exchange. Use the Error label for a sub-question absent from the original. "
+                "The corrections field accepts missing questions as Question: Label and summary-error reports. "
+                "Summaries and corrections stay in the source language; response labels stay in English.\n\n"
                 "After annotation, export each project in full JSON format (not JSON_MIN). "
                 "Save each export under the same annotator filename in a separate exports directory. "
                 "Then run evaluate-study with the coordinator's study directory and distribution ID. "

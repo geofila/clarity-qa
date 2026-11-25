@@ -1,7 +1,15 @@
 # CLARITY QA
 
+**[Annotation platform demo](http://spock.deep.islab.ntua.gr:9097)** - Sign up to explore the sample annotation tasks.
+
 Turn complete political question-answer exchanges into multilingual sub-questions, answer summaries, and response clarity predictions.
 
+
+## Ready-to-import English examples
+
+The [English toy demo](toy%20data/English/README.md) includes three complete fictional exchanges processed with the OpenAI Responses API using `gpt-6.1-sol`. Its [JSON import](toy%20data/English/annotator_01.json) contains **three tasks**, with all numbered sub-questions and answer summaries inside each task. Annotators highlight each numbered answer summary and assign one fixed response label.
+
+Use the [XML interface](toy%20data/English/labeling_config.xml), [HTML popup instructions](toy%20data/English/ANNOTATION_INSTRUCTIONS.html) and [annotator manual (PDF)](docs/CLARITY-Annotator-Guide.pdf). The demo README records the commands, saved model output and validation. All response predictions remain unreviewed and are hidden from annotators.
 
 ## Install and run
 
@@ -16,7 +24,7 @@ python -m pip install .
 
 export OPENAI_API_KEY="your-api-key"
 clarity-qa analyze \
-  --provider openai --model gpt-4o-mini \
+  --provider openai --model gpt-6.1-sol \
   --input examples/qa.en.json --output results.en.json
 ```
 
@@ -173,9 +181,9 @@ clarity-qa evaluate-study \
 
 Raw QA input runs through the existing analysis pipeline. Completed analysis output can also be supplied. Use `examples/study.no-controls.config.json` to disable controls; processed input without controls needs no model or API key. Add `--resume` to preparation after an interruption.
 
-Counterfactual tasks retain the original source and sub-question, replacing one supporting answer summary with deliberately unfaithful text. Controls are additional tasks, hidden among ordinary tasks, and come from sources the recipient does not otherwise see. The default review gate blocks export until a coordinator checks the variants and supplies verified reference labels. Original model predictions, source metadata and control answers are absent from the annotators' imports.
+Counterfactual tasks retain the complete original exchange and all sub-questions. Exactly one supporting answer summary is replaced with deliberately unfaithful text; the other summaries stay unchanged. Controls are additional tasks, hidden among ordinary tasks, and come from sources the recipient does not otherwise see. The default review gate blocks export until a coordinator checks the variants and supplies verified reference labels. Original model predictions, source metadata and control answers are absent from the annotators' imports.
 
-Agreement uses only complete ordinary shared items, before adjudication. Controls have separate detection, counterlabel-uptake and reviewed-reference metrics and are excluded from `normal_annotations`. With 20% overlap, only that common subset receives judgments from everyone.
+Agreement aligns paragraph highlights back to individual sub-questions and uses only complete ordinary shared items, before adjudication. Controls have separate detection, counterlabel-uptake and reviewed-reference metrics and are excluded from `normal_annotations`. With 20% overlap, only that common subset receives judgments from everyone.
 
 **Import only the public pack, never the study's `private/` directory.** Community Edition projects do not enforce per-user task assignment or access isolation. Use separate projects with independent work instructions, separate instances, or Enterprise permissions as appropriate.
 
@@ -183,16 +191,20 @@ See the [annotation-study guide](docs/annotation-studies.md) for configuration, 
 
 For annotators, share the [CLARITY Annotator Guide (PDF)](docs/CLARITY-Annotator-Guide.pdf). It covers the labeling workflow, the nine response types, examples adapted from Table 4 of the paper, and a submission checklist.
 
-## Label Studio prediction review
+## Label Studio export
 
 ```bash
 clarity-qa export-label-studio \
   --input results.batch.json \
   --output label-studio-tasks.json \
-  --config label-studio-config.xml
+  --config label-studio-config.xml \
+  --instructions annotation_instructions.html
 ```
 
-Paste the XML into the project's labeling interface and import the tasks JSON. There is one task per sub-question, with the original exchange, summaries, evidence, and predicted label. Predictions appear as pre-annotations. The interface also lets annotators flag unsupported sub-questions and record missing questions or corrections, following Figures 19 and 20. Only completed exchanges are exported.
+Paste the XML into the project's labeling interface, paste the HTML into its Instructions field, and import the JSON. There is **one task per complete exchange**, containing all numbered sub-questions and answer summaries. Label each entire numbered answer summary with one of the nine response labels, or use the Error label when a proposed question is absent from the original. Missing questions use `Question: Label` in the corrections field.
+
+Model labels are hidden by default. Add `--show-model-labels` only for coordinator prediction review; it produces span pre-annotations and should not be used for independent human annotation. Only completed exchanges with at least one sub-question are exported. Use `prepare-study` and `export-study` for allocation, overlap, controls and later agreement evaluation.
+
 
 ## Paper alignment and references
 
@@ -211,4 +223,4 @@ The pipeline adapts the three main preprocessing prompts in Appendix H. It ident
 python -m unittest discover -s tests -v
 ```
 
-Tests use deterministic fixtures and the real OpenAI SDK with mocked HTTP responses. They cover multilingual field preservation, the taxonomy, evidence checking, repair behavior, provider fallback, checkpoint resume, grouped overlap, unseen-source controls, coordinator review, blinded exports, full-export merging and hand-calculated agreement cases. Live model inference has not been verified in this environment because no provider credential was configured. Counterfactual semantic suitability and multilingual quality require coordinator review and a local pilot. See [validation notes](docs/validation.md) for the checked environments and Label Studio integration results.
+Tests use deterministic fixtures and the real OpenAI SDK with mocked HTTP responses. They cover multilingual field preservation, the taxonomy, evidence checking, repair behavior, provider fallback, checkpoint resume, grouped overlap, unseen-source controls, coordinator review, blinded exports, full-export merging and hand-calculated agreement cases. The saved English demo was generated live with OpenAI Responses and `gpt-6.1-sol`; its original provenance is retained. The 0.3.0 export reuses that saved analysis without further model requests. Label Studio integration verifies import, synthetic highlight annotation, full JSON export and agreement evaluation. Counterfactual semantic suitability and multilingual quality require coordinator review and a local pilot. See [validation notes](docs/validation.md) for the checked environments and Label Studio integration results.

@@ -1,0 +1,86 @@
+{
+  "status": "completed",
+  "package_version": "0.3.0",
+  "annotation_format": "exchange-spans-v1",
+  "source_exchanges": 3,
+  "sub_question_units": 9,
+  "imported_exchange_tasks": 3,
+  "annotators": 1,
+  "overlap_fraction": 0,
+  "counterfactuals_enabled": false,
+  "reused_saved_model_output": true,
+  "analysis_sha256": "6996013d77bc8646f16e8d5f0535f3810048e576f5f1fb282aa8d90a50d3d8bd",
+  "commands": [
+    [
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/../work/clarity-qa-release-check/bin/python",
+      "-m",
+      "clarity_qa",
+      "prepare-study",
+      "--input",
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/analysis.output.json",
+      "--config",
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/toy data/English/study.config.json",
+      "--output",
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/work/clarity-0.3-english-pack-study"
+    ],
+    [
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/clarity-qa/../work/clarity-qa-release-check/bin/python",
+      "-m",
+      "clarity_qa",
+      "export-study",
+      "--study",
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/work/clarity-0.3-english-pack-study",
+      "--output",
+      "/Users/giorgosfilandrianos/Documents/Codex/2026-11-10/dataset-i-never-said-that-val/work/clarity-0.3-english-pack"
+    ]
+  ],
+  "started_at_utc": "2026-11-25T19:58:04.493120+00:00",
+  "finished_at_utc": "2026-11-25T19:58:05.306365+00:00",
+  "model_provenance": [
+    {
+      "package_version": "0.2.0",
+      "prompt_version": "1.0",
+      "taxonomy_version": "qevasion-2024-nine-labels-v1",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "api": "responses",
+      "output_modes": [
+        "json_schema",
+        "json_schema",
+        "json_schema"
+      ],
+      "created_at": "2026-11-25T15:22:08.854604Z",
+      "review_status": "unreviewed"
+    },
+    {
+      "package_version": "0.2.0",
+      "prompt_version": "1.0",
+      "taxonomy_version": "qevasion-2024-nine-labels-v1",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "api": "responses",
+      "output_modes": [
+        "json_schema",
+        "json_schema",
+        "json_schema"
+      ],
+      "created_at": "2026-11-25T15:22:36.118478Z",
+      "review_status": "unreviewed"
+    },
+    {
+      "package_version": "0.2.0",
+      "prompt_version": "1.0",
+      "taxonomy_version": "qevasion-2024-nine-labels-v1",
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "api": "responses",
+      "output_modes": [
+        "json_schema",
+        "json_schema",
+        "json_schema"
+      ],
+      "created_at": "2026-11-25T15:23:04.079405Z",
+      "review_status": "unreviewed"
+    }
+  ]
+}

@@ -57,7 +57,7 @@ clarity-qa prepare-study \
 
 `fraction` means the fraction of unique original QA exchanges shared with **all** annotators. All sub-questions from a source stay together. Other sources go to one annotator, balancing the number of sub-questions. The common sources and their summaries are identical across annotator files. Each file has its own seeded task order.
 
-The number of common sources is rounded to the nearest integer, with halves rounded up. If a positive fraction selects zero sources, preparation fails with a request to increase the fraction or dataset size. Shared fractions among final sub-question tasks can differ from the source fraction when exchanges have different numbers of parts.
+The number of common sources is rounded to the nearest integer, with halves rounded up. If a positive fraction selects zero sources, preparation fails with a request to increase the fraction or dataset size. Shared fractions among final sub-question units can differ from the source fraction when exchanges have different numbers of parts.
 
 For 3,000 sources containing one sub-question each, three annotators and 20% overlap, each annotator receives 600 common tasks and 800 exclusive normal tasks. With 30 controls per annotator, each receives 1,430 tasks. Only the common 20% has judgments from everyone. This configuration does not collect three judgments for every normal task.
 
@@ -112,10 +112,12 @@ label-studio-es/
   annotator_02.json
   annotator_03.json
   labeling_config.xml
+  annotation_instructions.html
+  CLARITY-Annotator-Guide.pdf
   IMPORT.md
 ```
 
-Create one project per annotator. Paste `labeling_config.xml` into Labeling Setup and import only that person's JSON file. The interface asks annotators to check the sub-question, judge summary faithfulness, correct unsupported summaries, and label the original response. Unsupported sub-questions do not require a response-type label. Missing questions and other corrections can be recorded for later adjudication.
+Create one project per annotator. Paste `labeling_config.xml` into Labeling Setup and import only that person's JSON file. Paste `annotation_instructions.html` into the project Instructions field and share the included PDF guide. Each task contains a complete original exchange, all numbered sub-questions and their numbered answer summaries. Select a response label and highlight each entire numbered answer summary. Use the Error label for a proposed question absent from the original. Record missing questions as `Question: Label` and report inaccurate summaries in the corrections field. Model labels are never preselected in study tasks.
 
 Public tasks contain an opaque `task_key`, source-language text and fixed taxonomy definitions. They omit model predictions, source metadata, reference labels, counterlabels, control flags and model-selected evidence snippets. In particular, a faithful global summary is not shown alongside a manipulated part summary. Both normal and control tasks use the same fields and interface.
 
@@ -145,19 +147,25 @@ clarity-qa evaluate-study \
 
 The latest distribution is used by default. Pass `--distribution DISTRIBUTION_ID` when evaluating an earlier distribution. Task keys and source-data fingerprints must match the selected distribution. Predictions do not count as annotations. Canceled tasks are incomplete. Each per-annotator file may contain at most one completed human annotation per task and one observed user identity. Identity follows the assigned filename; numeric user IDs from separate instances are not globally comparable.
 
+New distributions use `exchange-spans-v1`. Existing frozen plans remain readable, and earlier per-sub-question choice distributions can still be evaluated with their original distribution ID and task files. Exporting a plan with version 0.3.0 creates the new grouped layout. Do not combine task files, XML or annotations from different distributions.
+
 The report contains:
 
-- Completion counts and missing or canceled tasks per annotator.
+- Completion counts in exchange tasks and sub-question units, plus missing or canceled tasks per annotator.
 - Fleiss' kappa for the nine response labels and the three derived clarity categories. Only common, unchanged tasks with complete valid ratings enter agreement. Counts of excluded incomplete or unsupported sub-questions are reported. One-category data produces an undefined kappa (`null`), rather than a misleading perfect score.
-- Counterlabel uptake among labeled controls, summary-error detection among completed summary checks, and source-label accuracy only against human-reviewed references. All numerators and denominators are included. A missing response-type label does not enter label-accuracy denominators; completion and check counts show that omission separately.
+- Counterlabel uptake and reviewed-reference accuracy on the manipulated part of each control exchange. Other parts of control exchanges are excluded from normal annotations and agreement. The highlight-only interface has no separate summary-faithfulness choice, so automatic summary-error detection is `null`, not inferred from free-text comments. Legacy choice-based distributions retain their separate summary-check metrics. All numerators and denominators are included. A missing response-type label does not enter label-accuracy denominators; completion and check counts show that omission separately.
 - `normal_annotations`, containing original exchanges and all collected ordinary human judgments and corrections. Controls are excluded. Supporting model summaries remain explicitly named as model output. The tool does not turn majority votes, model predictions or free-text corrections into adjudicated gold data automatically.
 
-Calculate agreement before discussing or adjudicating disagreements. With one imported task per sub-question, judgments are aligned to the original generated parts. Newly suggested questions in the corrections field need coordinator review and alignment before they become additional dataset units.
+Calculate agreement before discussing or adjudicating disagreements. Each imported task is one full exchange; exported highlights are aligned to individual generated parts using private UTF-16 paragraph offsets. The evaluator requires one complete paragraph highlight per part and rejects missing, duplicate, partial, cross-answer or invalid highlights. Newly suggested questions in the corrections field need coordinator review and alignment before they become additional dataset units.
 
 ## Relation to the paper
 
 Appendix A.3 of [I Never Said That](https://aclanthology.org/2024.findings-emnlp.300.pdf) describes 31 additional counterfactual sQA samples. Appendix H provides the misleading-summary prompt. Original QA text remained available, counterlabels were hidden, and the researchers manually checked the generated controls. Section 4 describes 317 common QA pairs annotated by all three annotators.
 
-This package adapts that approach with configurable per-annotator control counts, source-group overlap, blinded individual exports and explicit review records. It manipulates one supporting sub-answer summary per control task, and keeps the sub-question fixed. It does not reproduce the original campaign's exact sample allocation or claim the paper's attention-check results for new data.
+This package adapts that approach with configurable per-annotator control counts, source-group overlap, blinded individual exports and explicit review records. It replaces exactly one supporting sub-answer summary inside a complete-exchange control task, preserving the source, all sub-questions and the other summaries. It does not reproduce the original campaign's exact sample allocation or claim the paper's attention-check results for new data.
 
 Label Studio references: [import tasks](https://labelstud.io/guide/tasks), [pre-annotations](https://labelstud.io/guide/predictions), [Community Edition users](https://labelstud.io/guide/signup), [edition differences](https://labelstud.io/guide/enterprise_features), [conditional View](https://labelstud.io/tags/view).
+
+## Release 0.3.0 example
+
+The [English toy demo](../toy%20data/English/README.md) contains actual saved OpenAI output and a ready-to-import three-exchange annotation pack. The [platform demo](http://spock.deep.islab.ntua.gr:9097) is available for exploring the interface.

@@ -10,7 +10,7 @@ from filelock import FileLock, Timeout
 from pydantic import ValidationError
 
 from .io import atomic_json, load_pairs, run_batch
-from .label_studio import export_tasks, labeling_config
+from .label_studio import annotation_instructions, export_tasks, labeling_config
 from .models import Analysis, BatchResult
 from .pipeline import QAPipeline
 from .providers import PROVIDERS, GenerationError, ProviderError
@@ -58,6 +58,8 @@ def parser():
     export.add_argument("--input", required=True, type=Path)
     export.add_argument("--output", required=True, type=Path, help="Label Studio tasks JSON.")
     export.add_argument("--config", type=Path, help="Optional destination for the XML labeling config.")
+    export.add_argument("--instructions", type=Path, help="Optional destination for the HTML annotation instructions.")
+    export.add_argument("--show-model-labels", action="store_true", help="Include model highlight predictions for coordinator review. Leave off for human annotation.")
     study = commands.add_parser("prepare-study", help="Plan grouped annotation overlap and generate private control candidates.")
     study.add_argument("--input", required=True, type=Path, help="Raw QA JSON or completed analysis JSON.")
     study.add_argument("--config", required=True, type=Path, help="Study configuration JSON.")
@@ -109,8 +111,9 @@ def analyze_command(args):
 def export_command(args):
     if args.input.resolve() == args.output.resolve():
         raise ValueError("Input and export output paths must differ.")
-    if args.config and args.config.resolve() in (args.input.resolve(), args.output.resolve()):
-        raise ValueError("The XML config path must differ from the JSON paths.")
+    paths = [args.input, args.output] + [p for p in (args.config, args.instructions) if p is not None]
+    if len({p.resolve() for p in paths}) != len(paths):
+        raise ValueError("Input, task JSON, XML and instructions paths must all differ.")
     value = read_json(str(args.input))
     if isinstance(value, dict) and "results" in value:
         report = BatchResult.model_validate(value)
@@ -121,12 +124,15 @@ def export_command(args):
         analyses = [Analysis.model_validate(item) for item in value]
     else:
         analyses = [Analysis.model_validate(value)]
-    tasks = export_tasks(analyses)
+    tasks = export_tasks(analyses, show_model_labels=args.show_model_labels)
     atomic_json(args.output, tasks)
     if args.config:
         args.config.parent.mkdir(parents=True, exist_ok=True)
         args.config.write_text(labeling_config(), encoding="utf-8")
-    print("Exported {} sub-question task(s).".format(len(tasks)), file=sys.stderr)
+    if args.instructions:
+        args.instructions.parent.mkdir(parents=True, exist_ok=True)
+        args.instructions.write_text(annotation_instructions(), encoding="utf-8")
+    print("Exported {} complete-exchange task(s).".format(len(tasks)), file=sys.stderr)
 
 
 def study_command(args):

@@ -1,0 +1,23 @@
+{
+  "project": 6,
+  "task": 19,
+  "url": "http://127.0.0.1:19097/projects/6/data?task=19",
+  "package_version": "0.3.0",
+  "model": "gpt-6.1-sol",
+  "imported_exchange_tasks": 3,
+  "numbered_responses": [
+    3,
+    3,
+    3
+  ],
+  "original_text_preserved": true,
+  "unannotated_roundtrip": true,
+  "instruction_css_preserved": true,
+  "model_labels_preselected": false,
+  "browser_highlights_submitted": 3,
+  "browser_exchange_submissions": 1,
+  "real_browser_offsets_parsed": true,
+  "corrections_roundtrip": true,
+  "research_human_annotations": 0,
+  "note": "Synthetic browser check in a local fixture; no annotations or changes were made on the remote demo."
+}
