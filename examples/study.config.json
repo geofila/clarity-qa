@@ -1,0 +1,17 @@
+{
+  "annotators": 3,
+  "seed": 42,
+  "overlap": {
+    "fraction": 0.20,
+    "shared_with": "all",
+    "unit": "source_qa"
+  },
+  "counterfactuals": {
+    "enabled": true,
+    "count_per_annotator": 30,
+    "require_review": true,
+    "min_length_ratio": 0.5,
+    "max_length_ratio": 2.0
+  },
+  "show_model_labels": false
+}

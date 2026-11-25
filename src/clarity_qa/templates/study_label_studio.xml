@@ -1,0 +1,44 @@
+<View>
+  <Header value="Read the original exchange. Supporting summaries may contain errors. Label the original response."/>
+  <Header value="Original question"/>
+  <Text name="original_question" value="$question"/>
+  <Header value="Original answer"/>
+  <Text name="original_answer" value="$answer"/>
+  <Header value="Sub-question"/>
+  <Text name="sub_question" value="$sub_question"/>
+  <Header value="Supporting answer summary"/>
+  <Text name="sub_answer" value="$sub_answer"/>
+  <Header value="Does this sub-question occur in the original question?"/>
+  <Choices name="question_validity" toName="sub_question" choice="single" required="true">
+    <Choice value="Supported"/>
+    <Choice value="Unsupported"/>
+  </Choices>
+  <View visibleWhen="choice-selected" whenTagName="question_validity" whenChoiceValue="Supported">
+    <Header value="Does the supporting summary faithfully represent the original answer?"/>
+    <Choices name="summary_faithfulness" toName="sub_answer" choice="single" required="true">
+      <Choice value="Supported"/>
+      <Choice value="Unsupported"/>
+      <Choice value="Uncertain"/>
+    </Choices>
+    <View visibleWhen="choice-selected" whenTagName="summary_faithfulness" whenChoiceValue="Unsupported">
+      <Header value="Correct the supporting summary using the original answer"/>
+      <TextArea name="corrected_summary" toName="sub_answer" rows="3" editable="true" maxSubmissions="1" required="true"/>
+    </View>
+    <Header value="Response type, based on the original exchange"/>
+    <Choices name="evasion" toName="sub_question" choice="single" required="true">
+      <Choice value="Explicit"/>
+      <Choice value="Implicit"/>
+      <Choice value="Dodging"/>
+      <Choice value="Deflection"/>
+      <Choice value="Partial/half-answer"/>
+      <Choice value="General"/>
+      <Choice value="Declining to answer"/>
+      <Choice value="Claims ignorance"/>
+      <Choice value="Clarification"/>
+    </Choices>
+  </View>
+  <Header value="Missing questions or other corrections"/>
+  <TextArea name="corrections" toName="sub_question" rows="3"/>
+  <Header value="Label definitions"/>
+  <Text name="taxonomy_definitions" value="$taxonomy_definitions"/>
+</View>

@@ -14,7 +14,32 @@ from .label_studio import export_tasks, labeling_config
 from .models import Analysis, BatchResult
 from .pipeline import QAPipeline
 from .providers import PROVIDERS, GenerationError, ProviderError
+from .study import export_study, prepare_study, processed_input
+from .study_evaluation import evaluate_study
+from .study_models import StudyConfig
 from .taxonomy import TAXONOMY_VERSION, taxonomy_records
+
+
+def model_arguments(command):
+    command.add_argument("--provider", choices=PROVIDERS, default=os.getenv("CLARITY_PROVIDER", "openai"))
+    command.add_argument("--model", default=os.getenv("CLARITY_MODEL"), help="Provider model ID; also CLARITY_MODEL.")
+    command.add_argument("--base-url", help="Base URL including /v1 for a compatible server.")
+    command.add_argument("--api", choices=["responses", "chat"], help="Default: Responses for OpenAI, Chat Completions otherwise.")
+    command.add_argument("--api-key-env", help="Name of an environment variable holding the provider key.")
+    command.add_argument("--output-mode", choices=["auto", "json_schema", "json_object", "prompt"], default="auto")
+    command.add_argument("--max-output-tokens", type=int, default=8192)
+    command.add_argument("--timeout", type=float, default=120)
+    command.add_argument("--max-retries", type=int, default=2, help="SDK retries for transient request failures.")
+    command.add_argument("--repair-attempts", type=int, default=1, help="Extra attempts for invalid model output per stage.")
+
+
+def configured_pipeline(args):
+    return QAPipeline(
+        model=args.model, provider=args.provider, base_url=args.base_url,
+        api=args.api, output_mode=args.output_mode, api_key_env=args.api_key_env,
+        max_output_tokens=args.max_output_tokens, timeout=args.timeout,
+        max_retries=args.max_retries, repair_attempts=args.repair_attempts,
+    )
 
 
 def parser():
@@ -28,20 +53,25 @@ def parser():
     analyze.add_argument("--language", help="Override input language(s); omit to use per-record language or auto detection.")
     analyze.add_argument("--output", required=True, type=Path, help="Resumable result JSON file.")
     analyze.add_argument("--resume", action="store_true", help="Reuse completed items with identical inputs/settings.")
-    analyze.add_argument("--provider", choices=PROVIDERS, default=os.getenv("CLARITY_PROVIDER", "openai"))
-    analyze.add_argument("--model", default=os.getenv("CLARITY_MODEL"), help="Provider model ID; also CLARITY_MODEL.")
-    analyze.add_argument("--base-url", help="Base URL including /v1 for a compatible server.")
-    analyze.add_argument("--api", choices=["responses", "chat"], help="Default: Responses for OpenAI, Chat Completions otherwise.")
-    analyze.add_argument("--api-key-env", help="Name of an environment variable holding the provider key.")
-    analyze.add_argument("--output-mode", choices=["auto", "json_schema", "json_object", "prompt"], default="auto")
-    analyze.add_argument("--max-output-tokens", type=int, default=8192)
-    analyze.add_argument("--timeout", type=float, default=120)
-    analyze.add_argument("--max-retries", type=int, default=2, help="SDK retries for transient request failures.")
-    analyze.add_argument("--repair-attempts", type=int, default=1, help="Extra attempts for invalid model output per stage.")
+    model_arguments(analyze)
     export = commands.add_parser("export-label-studio", help="Export completed results and a review template.")
     export.add_argument("--input", required=True, type=Path)
     export.add_argument("--output", required=True, type=Path, help="Label Studio tasks JSON.")
     export.add_argument("--config", type=Path, help="Optional destination for the XML labeling config.")
+    study = commands.add_parser("prepare-study", help="Plan grouped annotation overlap and generate private control candidates.")
+    study.add_argument("--input", required=True, type=Path, help="Raw QA JSON or completed analysis JSON.")
+    study.add_argument("--config", required=True, type=Path, help="Study configuration JSON.")
+    study.add_argument("--output", required=True, type=Path, help="New coordinator study directory.")
+    study.add_argument("--resume", action="store_true", help="Resume with identical source, configuration and model settings.")
+    model_arguments(study)
+    distribution = commands.add_parser("export-study", help="Export a blinded Label Studio pack after control review.")
+    distribution.add_argument("--study", required=True, type=Path)
+    distribution.add_argument("--output", required=True, type=Path, help="New public-only import directory.")
+    evaluation = commands.add_parser("evaluate-study", help="Merge per-annotator exports and report agreement and control metrics.")
+    evaluation.add_argument("--study", required=True, type=Path)
+    evaluation.add_argument("--exports", required=True, type=Path, help="Directory of full JSON exports named after annotators.")
+    evaluation.add_argument("--distribution", help="Distribution ID; defaults to the latest export from this study.")
+    evaluation.add_argument("--output", required=True, type=Path, help="New evaluation report JSON.")
     commands.add_parser("taxonomy", help="Print the fixed English labels and explanations.")
     return root
 
@@ -64,12 +94,7 @@ def analyze_command(args):
             raise ValueError("--question requires --answer.")
         source = {"question": args.question, "answer": args.answer}
     pairs = load_pairs(source, args.language)
-    with QAPipeline(
-        model=args.model, provider=args.provider, base_url=args.base_url,
-        api=args.api, output_mode=args.output_mode, api_key_env=args.api_key_env,
-        max_output_tokens=args.max_output_tokens, timeout=args.timeout,
-        max_retries=args.max_retries, repair_attempts=args.repair_attempts,
-    ) as pipeline:
+    with configured_pipeline(args) as pipeline:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         with FileLock(str(args.output.resolve()) + ".lock", timeout=0):
             if args.output.exists() and not args.resume:
@@ -104,6 +129,45 @@ def export_command(args):
     print("Exported {} sub-question task(s).".format(len(tasks)), file=sys.stderr)
 
 
+def study_command(args):
+    output = args.output.resolve()
+    if any(path.resolve() == output or path.resolve().is_relative_to(output) for path in (args.input, args.config)):
+        raise ValueError("Study input and config must be outside the study output directory.")
+    value = read_json(str(args.input))
+    config = StudyConfig.model_validate(read_json(str(args.config)))
+    needs_model = processed_input(value) is None or (config.counterfactuals.enabled and config.counterfactuals.count_per_annotator > 0)
+    if needs_model:
+        # Validate raw inputs before constructing a provider or making a request.
+        if processed_input(value) is None:
+            load_pairs(value)
+        with configured_pipeline(args) as pipeline:
+            plan = prepare_study(value, config, args.output, pipeline=pipeline, resume=args.resume)
+    else:
+        plan = prepare_study(value, config, args.output, resume=args.resume)
+    print("Prepared {} source exchange(s), {} shared, for {} annotator(s).".format(
+        len(plan["sources"]), len(plan["shared_source_keys"]), len(config.annotator_ids())), file=sys.stderr)
+    print("Review {} control candidate(s) in {}/private/counterfactuals.json, then run export-study.".format(
+        len(plan["counterfactual_slots"]), args.output), file=sys.stderr)
+
+
+def distribute_command(args):
+    manifest = export_study(args.study, args.output)
+    print("Exported distribution {} to {}.".format(manifest["distribution_id"], args.output), file=sys.stderr)
+    for name, keys in manifest["assignments"].items():
+        print("{}: {} task(s)".format(name, len(keys)), file=sys.stderr)
+
+
+def evaluate_command(args):
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    with FileLock(str(args.output.resolve()) + ".lock", timeout=0):
+        if args.output.exists():
+            raise ValueError("Evaluation output already exists. Choose a new path.")
+        report = evaluate_study(args.study, args.exports, args.distribution)
+        atomic_json(args.output, report)
+    print("Saved evaluation and {} normal annotation unit(s) to {}.".format(
+        len(report["normal_annotations"]), args.output), file=sys.stderr)
+
+
 def main(argv=None):
     args = parser().parse_args(argv)
     try:
@@ -111,6 +175,12 @@ def main(argv=None):
             analyze_command(args)
         elif args.command == "export-label-studio":
             export_command(args)
+        elif args.command == "prepare-study":
+            study_command(args)
+        elif args.command == "export-study":
+            distribute_command(args)
+        elif args.command == "evaluate-study":
+            evaluate_command(args)
         else:
             print(json.dumps({"version": TAXONOMY_VERSION, "labels": taxonomy_records()}, indent=2))
     except Timeout:

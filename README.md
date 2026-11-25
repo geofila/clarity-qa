@@ -149,7 +149,39 @@ Explanations are canonical taxonomy definitions inserted by code. Instance-speci
 
 `clarity-qa taxonomy` prints all fixed definitions as JSON. The strings follow the released QEvasion dataset, including `Partial/half-answer` and `Ambivalent`. Figures 3 and 20 use some abbreviated display names. Earlier helper scripts in the upstream repository contain an older taxonomy. This package uses the final nine-label taxonomy.
 
-## Label Studio
+## Annotation studies and counterfactuals
+
+Use `prepare-study` to assign whole source exchanges to an annotation team, with a common sample and optional counterfactual quality checks. The default example shares 20% of original QA exchanges with all three annotators, distributes the rest once, and adds 30 controls per person. Adjust the example config for your dataset size and team.
+
+```bash
+export CLARITY_MODEL="your-supported-model-id"
+
+clarity-qa prepare-study \
+  --input my-qa.json --config examples/study.config.json \
+  --output study-es --provider openai --model "$CLARITY_MODEL"
+
+# Review the candidates and verified source labels in:
+# study-es/private/counterfactuals.json
+
+clarity-qa export-study --study study-es --output label-studio-es
+
+# Import one JSON file into each annotator's Label Studio project.
+# Later, save full project JSON exports in exports-es/ under the annotator filenames.
+clarity-qa evaluate-study \
+  --study study-es --exports exports-es --output evaluation.es.json
+```
+
+Raw QA input runs through the existing analysis pipeline. Completed analysis output can also be supplied. Use `examples/study.no-controls.config.json` to disable controls; processed input without controls needs no model or API key. Add `--resume` to preparation after an interruption.
+
+Counterfactual tasks retain the original source and sub-question, replacing one supporting answer summary with deliberately unfaithful text. Controls are additional tasks, hidden among ordinary tasks, and come from sources the recipient does not otherwise see. The default review gate blocks export until a coordinator checks the variants and supplies verified reference labels. Original model predictions, source metadata and control answers are absent from the annotators' imports.
+
+Agreement uses only complete ordinary shared items, before adjudication. Controls have separate detection, counterlabel-uptake and reviewed-reference metrics and are excluded from `normal_annotations`. With 20% overlap, only that common subset receives judgments from everyone.
+
+**Import only the public pack, never the study's `private/` directory.** Community Edition projects do not enforce per-user task assignment or access isolation. Use separate projects with independent work instructions, separate instances, or Enterprise permissions as appropriate.
+
+See the [annotation-study guide](docs/annotation-studies.md) for configuration, review, import, evaluation, denominator definitions and the paper alignment.
+
+## Label Studio prediction review
 
 ```bash
 clarity-qa export-label-studio \
@@ -177,4 +209,4 @@ The pipeline adapts the three main preprocessing prompts in Appendix H. It ident
 python -m unittest discover -s tests -v
 ```
 
-All 29 tests passed on Python 3.9 and Python 3.12, including a fresh wheel installation. Tests use deterministic fixtures and the real OpenAI SDK with mocked HTTP responses. They exercise multilingual field preservation, the taxonomy, evidence checking, repair behavior, both API transports, provider fallback, batch failure and resume, and the Label Studio export. Live model inference has not been verified in this environment because no provider credential was configured. The Label Studio JSON and XML are checked programmatically, with no running Label Studio instance required by the tests.
+Tests use deterministic fixtures and the real OpenAI SDK with mocked HTTP responses. They cover multilingual field preservation, the taxonomy, evidence checking, repair behavior, provider fallback, checkpoint resume, grouped overlap, unseen-source controls, coordinator review, blinded exports, full-export merging and hand-calculated agreement cases. Live model inference has not been verified in this environment because no provider credential was configured. Counterfactual semantic suitability and multilingual quality require coordinator review and a local pilot. See [validation notes](docs/validation.md) for the checked environments and Label Studio integration results.
